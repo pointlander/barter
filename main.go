@@ -9,8 +9,12 @@ import (
 	"bytes"
 	"embed"
 	"encoding/csv"
+	"fmt"
 	"io"
+	"math"
 	"strconv"
+
+	"github.com/alixaxel/pagerank"
 )
 
 //go:embed iris.zip
@@ -90,5 +94,28 @@ func Load() []Fisher {
 
 func main() {
 	iris := Load()
-	_ = iris
+
+	entropy := func(input []Fisher) float64 {
+		graph := pagerank.NewGraph()
+		for i := range input {
+			for ii := range input {
+				sum := 0.0
+				for iii, value := range input[i].Measures {
+					sum += value * input[ii].Measures[iii]
+				}
+				graph.Link(uint32(i), uint32(ii), float64(sum))
+			}
+		}
+		entropy := 0.0
+		graph.Rank(1.0, 1e-3, func(node uint32, rank float64) {
+			if rank > 0 {
+				entropy += rank * math.Log2(rank)
+			}
+		})
+		return -entropy
+	}
+	fmt.Println(entropy(iris))
+	fmt.Println(entropy(iris[:50]))
+	fmt.Println(entropy(iris[50:100]))
+	fmt.Println(entropy(iris[100:]))
 }
