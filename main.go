@@ -16,7 +16,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/alixaxel/pagerank"
+	"github.com/pointlander/barter/pagerank"
 )
 
 //go:embed iris.zip
@@ -98,7 +98,7 @@ func main() {
 	iris := Load()
 
 	entropy := func(input []Fisher) float64 {
-		graph := pagerank.NewGraph()
+		graph := pagerank.NewGraph(len(input))
 		for i := range input {
 			for ii := range input {
 				sum := 0.0
@@ -110,7 +110,7 @@ func main() {
 		}
 		nodes := make([]float64, len(input))
 		entropy := 0.0
-		graph.Rank(1.0, 1e-6, func(node uint32, rank float64) {
+		graph.Rank(1.0, 1e-6, func(node int, rank float64) {
 			nodes[node] = rank
 		})
 		for _, rank := range nodes {
