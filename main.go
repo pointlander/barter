@@ -105,15 +105,19 @@ func main() {
 				for iii, value := range input[i].Measures {
 					sum += value * input[ii].Measures[iii]
 				}
-				graph.Link(uint32(i), uint32(ii), float64(sum))
+				graph.Link(uint32(i), uint32(ii), sum)
 			}
 		}
+		nodes := make([]float64, len(input))
 		entropy := 0.0
 		graph.Rank(1.0, 1e-6, func(node uint32, rank float64) {
+			nodes[node] = rank
+		})
+		for _, rank := range nodes {
 			if rank > 0 {
 				entropy += rank * math.Log2(rank)
 			}
-		})
+		}
 		return -entropy
 	}
 	fmt.Println(entropy(iris))
