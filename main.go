@@ -13,6 +13,7 @@ import (
 	"io"
 	"math"
 	"math/rand"
+	"sort"
 	"strconv"
 
 	"github.com/alixaxel/pagerank"
@@ -126,13 +127,13 @@ func main() {
 	for i := range neurons {
 		neurons[i] = make([]Fisher, 50)
 	}
-	for i := 0; i < 50; i++ {
+	for i := range neurons[0] {
 		neurons[0][i] = iris[perm[i]]
 	}
-	for i := 0; i < 50; i++ {
+	for i := range neurons[1] {
 		neurons[1][i] = iris[perm[i+50]]
 	}
-	for i := 0; i < 50; i++ {
+	for i := range neurons[2] {
 		neurons[2][i] = iris[perm[i+100]]
 	}
 	fmt.Println(entropy(neurons[0]))
@@ -146,14 +147,34 @@ func main() {
 		neurons[a][x], neurons[b][y] = neurons[b][y], neurons[a][x]
 		entropyAGain, entropyBGain := entropy(neurons[a]), entropy(neurons[b])
 		if !(entropyAGain > entropyA && entropyBGain > entropyB) {
-			neurons[a][x], neurons[b][y] = neurons[b][y], neurons[a][x]
+			neurons[b][y], neurons[a][x] = neurons[a][x], neurons[b][y]
 		}
 	}
 
+	indexes := make(map[int]bool)
 	for _, n := range neurons {
+		sort.Slice(n, func(i, j int) bool {
+			return n[i].Index < n[j].Index
+		})
 		for _, entry := range n {
-			fmt.Println(entry.Label)
+			if indexes[entry.Index] {
+				panic("dup")
+			}
+			indexes[entry.Index] = true
+			fmt.Println(entry.Index, entry.Label)
 		}
 		fmt.Println()
+	}
+
+	acc := make(map[string][3]int)
+	for cluster := range neurons {
+		for i := range neurons[cluster] {
+			counts := acc[neurons[cluster][i].Label]
+			counts[cluster]++
+			acc[neurons[cluster][i].Label] = counts
+		}
+	}
+	for i, v := range acc {
+		fmt.Println(i, v)
 	}
 }
