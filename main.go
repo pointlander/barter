@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/rand"
 	"strconv"
 
 	"github.com/alixaxel/pagerank"
@@ -107,7 +108,7 @@ func main() {
 			}
 		}
 		entropy := 0.0
-		graph.Rank(1.0, 1e-3, func(node uint32, rank float64) {
+		graph.Rank(1.0, 1e-6, func(node uint32, rank float64) {
 			if rank > 0 {
 				entropy += rank * math.Log2(rank)
 			}
@@ -118,4 +119,41 @@ func main() {
 	fmt.Println(entropy(iris[:50]))
 	fmt.Println(entropy(iris[50:100]))
 	fmt.Println(entropy(iris[100:]))
+
+	rng := rand.New(rand.NewSource(1))
+	perm := rng.Perm(len(iris))
+	neurons := make([][]Fisher, 3)
+	for i := range neurons {
+		neurons[i] = make([]Fisher, 50)
+	}
+	for i := 0; i < 50; i++ {
+		neurons[0][i] = iris[perm[i]]
+	}
+	for i := 0; i < 50; i++ {
+		neurons[1][i] = iris[perm[i+50]]
+	}
+	for i := 0; i < 50; i++ {
+		neurons[2][i] = iris[perm[i+100]]
+	}
+	fmt.Println(entropy(neurons[0]))
+	fmt.Println(entropy(neurons[1]))
+	fmt.Println(entropy(neurons[2]))
+
+	for range 8 * 1024 {
+		a, b := rng.Intn(3), rng.Intn(3)
+		x, y := rng.Intn(len(neurons[a])), rng.Intn(len(neurons[b]))
+		entropyA, entropyB := entropy(neurons[a]), entropy(neurons[b])
+		neurons[a][x], neurons[b][y] = neurons[b][y], neurons[a][x]
+		entropyAGain, entropyBGain := entropy(neurons[a]), entropy(neurons[b])
+		if !(entropyAGain > entropyA && entropyBGain > entropyB) {
+			neurons[a][x], neurons[b][y] = neurons[b][y], neurons[a][x]
+		}
+	}
+
+	for _, n := range neurons {
+		for _, entry := range n {
+			fmt.Println(entry.Label)
+		}
+		fmt.Println()
+	}
 }
