@@ -7,7 +7,7 @@ For each round, two players are randomly selected, and a vector is randomly sele
 The two players calculate their current entropy, and then swap vectors.
 The two players calculate their new entropy, and if both players gain in entropy then the trade is successful.
 If both players don't gain in entropy then the vector swap is reversed.
-The previous steps a repeated a large number of times resulting in the clustering of the vectors.
+The previous steps are repeated a large number of times resulting in the clustering of the vectors.
 ## Entropy calculation
 An adjacency matrix is calculated by multiplying all input vectors (50 vectors from a particular player) by all input vectors.
 The adjacency matrix is fed into page rank.
