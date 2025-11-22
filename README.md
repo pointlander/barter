@@ -13,6 +13,6 @@ An adjacency matrix is calculated by multiplying all input vectors (50 vectors f
 The adjacency matrix is fed into page rank.
 The entropy is calculated over the page rank output probabilities.
 ## Future work
-- The adjacency matrix is symmetric which may result is a loss of clustering accuracy. The adjacency matrix can be made asymmetric through the dropout algorithm, adding in noise, or multiplying the Iris vectors by random transforms.
-- It might be possible to randomly select vectors in a non-uniform manner by using the page ranks (the algorithm now requiring fewer iterations).
-- A distributed implementation might work. In a simple implementation trades might be one sided. If Ethereum contracts are used trades could be fair (with high computational overhead).
+- The adjacency matrix is symmetric which may result in a loss of clustering accuracy. The adjacency matrix can be made asymmetric through the dropout algorithm, adding in noise, or multiplying the Iris vectors by random transforms.
+- It might be possible to randomly select vectors in a non-uniform manner by using the page ranks (the algorithm now requiries fewer iterations).
+- A distributed implementation might work. In a simple implementation trades might be one sided. If Ethereum contracts are used, trades could be fair (with high computational overhead).
