@@ -5,6 +5,7 @@ package pagerank
 
 import (
 	"math"
+	"math/rand"
 )
 
 type node struct {
@@ -14,13 +15,15 @@ type node struct {
 
 // Graph holds node and edge data.
 type Graph struct {
+	rng   *rand.Rand
 	edges [][]float64
 	nodes []*node
 }
 
 // NewGraph initializes and returns a new graph.
-func NewGraph(count int) *Graph {
+func NewGraph(count int, rng *rand.Rand) *Graph {
 	return &Graph{
+		rng:   rng,
 		edges: make([][]float64, count),
 		nodes: make([]*node, count),
 	}
@@ -77,8 +80,10 @@ func (self *Graph) Rank(α, ε float64, callback func(id int, rank float64)) {
 	for Δ > ε {
 		leak := float64(0)
 		nodes := make([]float64, len(self.nodes))
+		perm := self.rng.Perm(len(self.nodes))
 
-		for key, value := range self.nodes {
+		for key := range perm {
+			value := self.nodes[key]
 			nodes[key] = value.weight
 
 			if value.outbound == 0 {
@@ -90,7 +95,7 @@ func (self *Graph) Rank(α, ε float64, callback func(id int, rank float64)) {
 
 		leak *= α
 
-		for source := range self.nodes {
+		for source := range perm {
 			for target, weight := range self.edges[source] {
 				self.nodes[target].weight += α * nodes[source] * weight
 			}

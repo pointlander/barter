@@ -96,9 +96,9 @@ func Load() []Fisher {
 
 func main() {
 	iris := Load()
-
+	rng := rand.New(rand.NewSource(1))
 	entropy := func(input []Fisher) float64 {
-		graph := pagerank.NewGraph(len(input))
+		graph := pagerank.NewGraph(len(input), rng)
 		for i := range input {
 			for ii := range input {
 				sum := 0.0
@@ -125,7 +125,6 @@ func main() {
 	fmt.Println(entropy(iris[50:100]))
 	fmt.Println(entropy(iris[100:]))
 
-	rng := rand.New(rand.NewSource(1))
 	perm := rng.Perm(len(iris))
 	neurons := make([][]Fisher, 3)
 	for i := range neurons {
