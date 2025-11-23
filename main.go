@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"embed"
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"io"
 	"math"
@@ -94,7 +95,14 @@ func Load() []Fisher {
 	return fisher
 }
 
+var (
+	// FlagCommunism is the communism mode
+	FlagCommunism = flag.Bool("communism", false, "communism mode")
+)
+
 func main() {
+	flag.Parse()
+
 	iris := Load()
 	rng := rand.New(rand.NewSource(1))
 	entropy := func(input []Fisher) float64 {
@@ -149,8 +157,20 @@ func main() {
 		entropyA, entropyB := entropy(neurons[a]), entropy(neurons[b])
 		neurons[a][x], neurons[b][y] = neurons[b][y], neurons[a][x]
 		entropyAGain, entropyBGain := entropy(neurons[a]), entropy(neurons[b])
-		if !(entropyAGain > entropyA && entropyBGain > entropyB) {
-			neurons[b][y], neurons[a][x] = neurons[a][x], neurons[b][y]
+		if *FlagCommunism {
+			if rng.Float64() < .3 {
+				if !(entropyAGain > entropyA && entropyBGain > entropyB) {
+					neurons[b][y], neurons[a][x] = neurons[a][x], neurons[b][y]
+				}
+			} else {
+				if !(entropyAGain < entropyA || entropyBGain < entropyB) {
+					neurons[b][y], neurons[a][x] = neurons[a][x], neurons[b][y]
+				}
+			}
+		} else {
+			if !(entropyAGain > entropyA && entropyBGain > entropyB) {
+				neurons[b][y], neurons[a][x] = neurons[a][x], neurons[b][y]
+			}
 		}
 	}
 
