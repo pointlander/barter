@@ -66,7 +66,7 @@ func (self *Graph) Rank(α, ε float64, callback func(id int, rank float64)) {
 
 	// Normalize all the edge weights so that their sum amounts to 1.
 	for source := range self.edges {
-		if self.nodes[source].outbound > 0 {
+		if self.nodes[source] != nil && self.nodes[source].outbound > 0 {
 			for target := range self.edges[source] {
 				self.edges[source][target] /= self.nodes[source].outbound
 			}
@@ -74,6 +74,9 @@ func (self *Graph) Rank(α, ε float64, callback func(id int, rank float64)) {
 	}
 
 	for key := range self.nodes {
+		if self.nodes[key] == nil {
+			continue
+		}
 		self.nodes[key].weight = inverse
 	}
 
@@ -84,6 +87,9 @@ func (self *Graph) Rank(α, ε float64, callback func(id int, rank float64)) {
 
 		for key := range perm {
 			value := self.nodes[key]
+			if value == nil {
+				continue
+			}
 			nodes[key] = value.weight
 
 			if value.outbound == 0 {
@@ -97,20 +103,31 @@ func (self *Graph) Rank(α, ε float64, callback func(id int, rank float64)) {
 
 		for source := range perm {
 			for target, weight := range self.edges[source] {
+				if self.nodes[target] == nil {
+					continue
+				}
 				self.nodes[target].weight += α * nodes[source] * weight
 			}
-
+			if self.nodes[source] == nil {
+				continue
+			}
 			self.nodes[source].weight += (1-α)*inverse + leak*inverse
 		}
 
 		Δ = 0
 
 		for key, value := range self.nodes {
+			if value == nil {
+				continue
+			}
 			Δ += math.Abs(value.weight - nodes[key])
 		}
 	}
 
 	for key, value := range self.nodes {
+		if value == nil {
+			continue
+		}
 		callback(key, value.weight)
 	}
 }

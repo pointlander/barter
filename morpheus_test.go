@@ -1,0 +1,149 @@
+// Copyright 2025 The Morpheus Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package main
+
+import (
+	"fmt"
+	"math"
+	"math/rand"
+	"testing"
+
+	"github.com/pointlander/barter/pagerank"
+)
+
+func TestPageRank(t *testing.T) {
+	rng := rand.New(rand.NewSource(1))
+	graph := pagerank.NewGraph(5, rng)
+
+	graph.Link(1, 2, 1.0)
+	graph.Link(1, 3, 2.0)
+	graph.Link(2, 3, 3.0)
+	graph.Link(2, 4, 4.0)
+	graph.Link(3, 1, 5.0)
+
+	nodes := make([]float64, 4)
+	graph.Rank(0.85, 0.001, func(node int, rank float64) {
+		nodes[node-1] = rank
+	})
+	t.Log(nodes)
+
+	adj := NewMatrix(4, 4, make([]float64, 4*4)...)
+	adj.Data[0*4+1] = 1.0
+	adj.Data[0*4+2] = 2.0
+	adj.Data[1*4+2] = 3.0
+	adj.Data[1*4+3] = 4.0
+	adj.Data[2*4+0] = 5.0
+	p := PageRank(.85, 32, 1, adj)
+	t.Log(p.Data)
+}
+
+func TestPageRankNegative(t *testing.T) {
+	adj := NewMatrix(4, 4, make([]float64, 4*4)...)
+	adj.Data[0*4+1] = 1.0
+	adj.Data[0*4+2] = -2.0
+	adj.Data[1*4+2] = 3.0
+	adj.Data[1*4+3] = -4.0
+	adj.Data[2*4+0] = 5.0
+	p := PageRank(.85, 32, 1, adj)
+	t.Log(p.Data)
+}
+
+func TestPageRankMarkov(t *testing.T) {
+	adj := NewMatrix(4, 4, make([]float64, 4*4)...)
+	adj.Data[0*4+1] = 1.0
+	adj.Data[0*4+2] = 2.0
+	adj.Data[1*4+2] = 3.0
+	adj.Data[1*4+3] = 4.0
+	adj.Data[2*4+0] = 5.0
+	p := PageRankMarkov(.85, 33, 1, adj)
+	t.Log(p.Data)
+}
+
+func TestGramSchmidt(t *testing.T) {
+	rng := rand.New(rand.NewSource(1))
+	m := NewMatrix(8, 8, make([]float64, 8*8)...)
+	for i := range m.Data {
+		m.Data[i] = rng.NormFloat64()
+	}
+	n := m.GramSchmidt()
+	t.Log(n.Data)
+	result := n.T().MulT(n.T()).Data
+	for i := range 8 {
+		s := ""
+		for ii := range 8 {
+			value := result[i*8+ii]
+			if math.Abs(value) < 1e-6 {
+				s += fmt.Sprintf("0 ")
+			} else {
+				s += fmt.Sprintf("%f ", value)
+			}
+		}
+		t.Log(s)
+	}
+}
+
+func BenchmarkMorpheus(b *testing.B) {
+	rng := rand.New(rand.NewSource(1))
+	config := Config{
+		Iterations: 32,
+		Size:       256,
+		Divider:    8,
+	}
+	type T struct{}
+	vectors := make([]*Vector[T], 8)
+	for i := range vectors {
+		vector := Vector[T]{}
+		for range 256 {
+			vector.Vector = append(vector.Vector, rng.Float32())
+		}
+		vectors[i] = &vector
+	}
+	for b.Loop() {
+		Morpheus(rng.Int63(), config, vectors)
+	}
+}
+
+func BenchmarkPageRank(b *testing.B) {
+	rng := rand.New(rand.NewSource(1))
+	for b.Loop() {
+		graph := pagerank.NewGraph(1024, rng)
+
+		for i := range 1024 {
+			for j := range 1024 {
+				graph.Link(uint32(i), uint32(j), rng.Float64())
+			}
+		}
+
+		graph.Rank(0.85, 0.001, func(node int, rank float64) {
+
+		})
+	}
+}
+
+func BenchmarkPageRankFast(b *testing.B) {
+	rng := rand.New(rand.NewSource(1))
+	for b.Loop() {
+		adj := NewMatrix(1024, 1024, make([]float64, 1024*1024)...)
+		for i := range 1024 {
+			for j := range 1024 {
+				adj.Data[i*1024+j] = rng.Float64()
+			}
+		}
+		PageRank(.85, 8, 1, adj)
+	}
+}
+
+func BenchmarkRank(b *testing.B) {
+	rng := rand.New(rand.NewSource(1))
+	vectors := make([][]float32, 16)
+	for i := range vectors {
+		for range 256 {
+			vectors[i] = append(vectors[i], rng.Float32())
+		}
+	}
+	for b.Loop() {
+		Rank(vectors)
+	}
+}

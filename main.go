@@ -95,6 +95,31 @@ func Load() []Fisher {
 	return fisher
 }
 
+// Rank calculates the page rank based entropy
+func Rank(vectors [][]float32) float64 {
+	rng := rand.New(rand.NewSource(1))
+	graph := pagerank.NewGraph(len(vectors), rng)
+	for ii := range vectors {
+		a := NewMatrix(256, 1, vectors[ii]...)
+		for iii := range vectors {
+			b := NewMatrix(256, 1, vectors[iii]...)
+			graph.Link(uint32(ii), uint32(iii), float64(a.CS(b)))
+		}
+	}
+	result := make([]float64, len(vectors))
+	graph.Rank(1.0, 1e-3, func(node int, rank float64) {
+		result[node] = rank
+	})
+	entropy := 0.0
+	for _, value := range result {
+		if value == 0 {
+			continue
+		}
+		entropy += value * math.Log2(value)
+	}
+	return -entropy
+}
+
 var (
 	// FlagCommunism is the communism mode
 	FlagCommunism = flag.Bool("communism", false, "communism mode")
