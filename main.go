@@ -123,10 +123,116 @@ func Rank(vectors [][]float32) float64 {
 var (
 	// FlagCommunism is the communism mode
 	FlagCommunism = flag.Bool("communism", false, "communism mode")
+	// FlagMorpheus mode
+	FlagMorpheus = flag.Bool("morpheus", false, "morpheus mode")
 )
+
+// MorpheusMode is the morhpes mode
+func MorpheusMode() {
+	input := Load()
+	iris := make([]Vector[Fisher], 150)
+	for i := range input {
+		iris[i].Meta = input[i]
+		iris[i].Word = input[i].Label
+		values := make([]float32, len(input[i].Measures))
+		for ii, value := range input[i].Measures {
+			values[ii] = float32(value)
+		}
+		iris[i].Vector = values
+	}
+	rng := rand.New(rand.NewSource(1))
+
+	perm := rng.Perm(len(iris))
+	neurons := make([][]Vector[Fisher], 3)
+	for i := range neurons {
+		neurons[i] = make([]Vector[Fisher], 50)
+	}
+	for i := range neurons[0] {
+		neurons[0][i] = iris[perm[i]]
+	}
+	for i := range neurons[1] {
+		neurons[1][i] = iris[perm[i+50]]
+	}
+	for i := range neurons[2] {
+		neurons[2][i] = iris[perm[i+100]]
+	}
+
+	for range 8 * 1024 {
+		a, b := rng.Intn(3), rng.Intn(3)
+		x, y := rng.Intn(len(neurons[a])), rng.Intn(len(neurons[b]))
+		n1 := make([]*Vector[Fisher], len(neurons[a])+1)
+		for i, v := range neurons[a] {
+			n1[i] = &v
+		}
+		v1 := neurons[b][y]
+		n1[len(neurons[a])] = &v1
+		n2 := make([]*Vector[Fisher], len(neurons[b])+1)
+		for i, v := range neurons[b] {
+			n2[i] = &v
+		}
+		v2 := neurons[a][x]
+		n2[len(neurons[b])] = &v2
+		config := Config{
+			Iterations: 8,
+			Size:       4,
+			Divider:    1,
+		}
+		Morpheus(rng.Int63(), config, n1)
+		Morpheus(rng.Int63(), config, n2)
+		if *FlagCommunism {
+			if rng.Float64() < .3 {
+				if !(v1.Stddev < n1[x].Stddev && v2.Stddev < n2[y].Stddev) {
+					continue
+				}
+			} else {
+				if !(v1.Stddev > n1[x].Stddev || v2.Stddev > n2[y].Stddev) {
+					continue
+				}
+			}
+		} else {
+			if !(v1.Stddev < n1[x].Stddev && v2.Stddev < n2[y].Stddev) {
+				continue
+			}
+		}
+		neurons[a][x], neurons[b][y] = neurons[b][y], neurons[a][x]
+	}
+
+	indexes := make(map[int]bool)
+	for _, n := range neurons {
+		sort.Slice(n, func(i, j int) bool {
+			return n[i].Meta.Index < n[j].Meta.Index
+		})
+		for _, entry := range n {
+			if indexes[entry.Meta.Index] {
+				panic("dup")
+			}
+			indexes[entry.Meta.Index] = true
+			fmt.Println(entry.Meta.Index, entry.Meta.Label)
+		}
+		fmt.Println()
+	}
+
+	acc := make(map[string][3]int)
+	for cluster := range neurons {
+		for i := range neurons[cluster] {
+			counts := acc[neurons[cluster][i].Meta.Label]
+			counts[cluster]++
+			acc[neurons[cluster][i].Meta.Label] = counts
+		}
+	}
+	for i, v := range acc {
+		fmt.Println(i, v)
+	}
+
+}
 
 func main() {
 	flag.Parse()
+
+	if *FlagMorpheus {
+		MorpheusMode()
+		return
+	}
 
 	input := Load()
 	iris := make([]Vector[Fisher], 150)
