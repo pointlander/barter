@@ -173,7 +173,7 @@ func MorpheusMode() {
 		v2 := neurons[a][x]
 		n2[len(neurons[b])] = &v2
 		config := Config{
-			Iterations: 8,
+			Iterations: 16,
 			Size:       4,
 			Divider:    1,
 		}
