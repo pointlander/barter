@@ -128,15 +128,25 @@ var (
 func main() {
 	flag.Parse()
 
-	iris := Load()
+	input := Load()
+	iris := make([]Vector[Fisher], 150)
+	for i := range input {
+		iris[i].Meta = input[i]
+		iris[i].Word = input[i].Label
+		values := make([]float32, len(input[i].Measures))
+		for ii, value := range input[i].Measures {
+			values[ii] = float32(value)
+		}
+		iris[i].Vector = values
+	}
 	rng := rand.New(rand.NewSource(1))
-	entropy := func(input []Fisher) float64 {
+	entropy := func(input []Vector[Fisher]) float64 {
 		graph := pagerank.NewGraph(len(input), rng)
 		for i := range input {
 			for ii := range input {
 				sum := 0.0
-				for iii, value := range input[i].Measures {
-					sum += value * input[ii].Measures[iii]
+				for iii, value := range input[i].Meta.Measures {
+					sum += value * input[ii].Meta.Measures[iii]
 				}
 				graph.Link(uint32(i), uint32(ii), sum)
 			}
@@ -159,9 +169,9 @@ func main() {
 	fmt.Println(entropy(iris[100:]))
 
 	perm := rng.Perm(len(iris))
-	neurons := make([][]Fisher, 3)
+	neurons := make([][]Vector[Fisher], 3)
 	for i := range neurons {
-		neurons[i] = make([]Fisher, 50)
+		neurons[i] = make([]Vector[Fisher], 50)
 	}
 	for i := range neurons[0] {
 		neurons[0][i] = iris[perm[i]]
@@ -202,14 +212,14 @@ func main() {
 	indexes := make(map[int]bool)
 	for _, n := range neurons {
 		sort.Slice(n, func(i, j int) bool {
-			return n[i].Index < n[j].Index
+			return n[i].Meta.Index < n[j].Meta.Index
 		})
 		for _, entry := range n {
-			if indexes[entry.Index] {
+			if indexes[entry.Meta.Index] {
 				panic("dup")
 			}
-			indexes[entry.Index] = true
-			fmt.Println(entry.Index, entry.Label)
+			indexes[entry.Meta.Index] = true
+			fmt.Println(entry.Meta.Index, entry.Meta.Label)
 		}
 		fmt.Println()
 	}
@@ -217,9 +227,9 @@ func main() {
 	acc := make(map[string][3]int)
 	for cluster := range neurons {
 		for i := range neurons[cluster] {
-			counts := acc[neurons[cluster][i].Label]
+			counts := acc[neurons[cluster][i].Meta.Label]
 			counts[cluster]++
-			acc[neurons[cluster][i].Label] = counts
+			acc[neurons[cluster][i].Meta.Label] = counts
 		}
 	}
 	for i, v := range acc {
