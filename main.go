@@ -134,11 +134,7 @@ func MorpheusMode() {
 	for i := range input {
 		iris[i].Meta = input[i]
 		iris[i].Word = input[i].Label
-		values := make([]float32, len(input[i].Measures))
-		for ii, value := range input[i].Measures {
-			values[ii] = float32(value)
-		}
-		iris[i].Vector = values
+		iris[i].Vector = input[i].Measures
 	}
 	rng := rand.New(rand.NewSource(1))
 
@@ -157,7 +153,7 @@ func MorpheusMode() {
 		neurons[2][i] = iris[perm[i+100]]
 	}
 
-	for range 8 * 1024 {
+	for range 16 * 1024 {
 		a, b := rng.Intn(3), rng.Intn(3)
 		x, y := rng.Intn(len(neurons[a])), rng.Intn(len(neurons[b]))
 		n1 := make([]*Vector[Fisher], len(neurons[a])+1)
@@ -177,8 +173,8 @@ func MorpheusMode() {
 			Size:       4,
 			Divider:    1,
 		}
-		Morpheus(rng.Int63(), config, n1)
-		Morpheus(rng.Int63(), config, n2)
+		MorpheusFast(rng.Int63(), config, n1)
+		MorpheusFast(rng.Int63(), config, n2)
 		if *FlagCommunism {
 			if rng.Float64() < .3 {
 				if !(v1.Stddev < n1[x].Stddev && v2.Stddev < n2[y].Stddev) {
@@ -239,11 +235,7 @@ func main() {
 	for i := range input {
 		iris[i].Meta = input[i]
 		iris[i].Word = input[i].Label
-		values := make([]float32, len(input[i].Measures))
-		for ii, value := range input[i].Measures {
-			values[ii] = float32(value)
-		}
-		iris[i].Vector = values
+		iris[i].Vector = input[i].Measures
 	}
 	rng := rand.New(rand.NewSource(1))
 	entropy := func(input []Vector[Fisher]) float64 {
