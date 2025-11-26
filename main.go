@@ -125,6 +125,8 @@ var (
 	FlagCommunism = flag.Bool("communism", false, "communism mode")
 	// FlagMorpheus mode
 	FlagMorpheus = flag.Bool("morpheus", false, "morpheus mode")
+	// FlagNeural neural mode
+	FlagNeural = flag.Bool("neural", false, "neural mode")
 )
 
 // MorpheusMode is the morhpes mode
@@ -222,11 +224,36 @@ func MorpheusMode() {
 
 }
 
+// Neuron a neuron
+type Neuron struct {
+	Connections [4]int
+	Vector      [4]float64
+}
+
+// NeuralMode neural mode
+func NeuralMode() {
+	rng := rand.New(rand.NewSource(1))
+	neurons := make([]Neuron, 8)
+	for i := range neurons {
+		for ii := range neurons[i].Connections {
+			neurons[i].Connections[ii] = rng.Intn(8)
+		}
+		for ii := range neurons[i].Vector {
+			neurons[i].Vector[ii] = float64(rng.Intn(256))
+		}
+	}
+}
+
 func main() {
 	flag.Parse()
 
 	if *FlagMorpheus {
 		MorpheusMode()
+		return
+	}
+
+	if *FlagNeural {
+		NeuralMode()
 		return
 	}
 
