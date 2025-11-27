@@ -14,6 +14,7 @@ import (
 	"io"
 	"math"
 	"math/rand"
+	"slices"
 	"sort"
 	"strconv"
 
@@ -236,10 +237,84 @@ func NeuralMode() {
 	neurons := make([]Neuron, 8)
 	for i := range neurons {
 		for ii := range neurons[i].Connections {
-			neurons[i].Connections[ii] = rng.Intn(8)
+			next := rng.Intn(len(neurons))
+			for next == i {
+				next = rng.Intn(len(neurons))
+			}
+			neurons[i].Connections[ii] = next
 		}
 		for ii := range neurons[i].Vector {
 			neurons[i].Vector[ii] = float64(rng.Intn(256))
+		}
+	}
+	for {
+		for i := range neurons {
+			next := rng.Intn(len(neurons))
+			for next == i || slices.Contains(neurons[i].Connections[:], next) {
+				next = rng.Intn(len(neurons))
+			}
+			vectors := make([]*Vector[Neuron], 6)
+			index := 0
+			for ii := range neurons[i].Connections {
+				vector := Vector[Neuron]{}
+				vector.Meta = neurons[neurons[i].Connections[ii]]
+				vector.Vector = neurons[neurons[i].Connections[ii]].Vector[:]
+				vectors[ii] = &vector
+				index++
+			}
+			{
+				a := Vector[Neuron]{}
+				a.Meta = neurons[next]
+				a.Vector = neurons[next].Vector[:]
+				vectors[index] = &a
+				index++
+			}
+			{
+				a := Vector[Neuron]{}
+				a.Meta = neurons[i]
+				a.Vector = neurons[i].Vector[:]
+				vectors[index] = &a
+				index++
+			}
+			config := Config{
+				Iterations: 16,
+				Size:       4,
+				Divider:    1,
+			}
+			MorpheusFast(rng.Int63(), config, vectors)
+			{
+				max, index := 0.0, 0
+				for i := range vectors[:len(vectors)-1] {
+					if vectors[i].Stddev > max {
+						max, index = vectors[i].Stddev, i
+					}
+				}
+				if index != len(vectors)-2 {
+					neurons[i].Connections[index] = next
+				}
+			}
+		}
+		fmt.Println(neurons)
+		fmt.Println()
+		last, lastIndex, neuron := 0, 0, 0
+		for range 1024 {
+			if neurons[neuron].Vector[last] > 128 {
+				neurons[neuron].Vector[last] = math.Round(neurons[neuron].Vector[last] / 2)
+			}
+			neurons[neuron].Vector[last]++
+			sum := 0.0
+			for _, value := range neurons[neuron].Vector {
+				sum += value
+			}
+			total, index, selected := 0.0, 0, float64(rng.Intn(int(sum)))
+			for i, value := range neurons[neuron].Vector {
+				total += value
+				if selected < total {
+					index = i
+					break
+				}
+			}
+			last, lastIndex, neuron = lastIndex, index, neurons[neuron].Connections[index]
 		}
 	}
 }
