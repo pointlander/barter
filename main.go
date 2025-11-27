@@ -296,12 +296,16 @@ func NeuralMode() {
 		}
 		fmt.Println(neurons)
 		fmt.Println()
-		last, lastIndex, neuron := 0, 0, 0
+		neuron := 0
 		for range 1024 {
-			if neurons[neuron].Vector[last] > 128 {
-				neurons[neuron].Vector[last] = math.Round(neurons[neuron].Vector[last] / 2)
+			for i := range neurons[neuron].Vector {
+				if neurons[neuron].Vector[i] > 128 {
+					for i, value := range neurons[neuron].Vector {
+						neurons[neuron].Vector[i] = math.Round(value / 2)
+					}
+					break
+				}
 			}
-			neurons[neuron].Vector[last]++
 			sum := 0.0
 			for _, value := range neurons[neuron].Vector {
 				sum += value
@@ -314,7 +318,8 @@ func NeuralMode() {
 					break
 				}
 			}
-			last, lastIndex, neuron = lastIndex, index, neurons[neuron].Connections[index]
+			neurons[neuron].Vector[index]++
+			neuron = neurons[neuron].Connections[index]
 		}
 	}
 }
