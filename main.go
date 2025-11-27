@@ -296,7 +296,7 @@ func NeuralMode() {
 		}
 		fmt.Println(neurons)
 		fmt.Println()
-		neuron := 0
+		previous, neuron := 0, 0
 		for range 1024 {
 			for i := range neurons[neuron].Vector {
 				if neurons[neuron].Vector[i] > 128 {
@@ -318,8 +318,13 @@ func NeuralMode() {
 					break
 				}
 			}
-			neurons[neuron].Vector[index]++
-			neuron = neurons[neuron].Connections[index]
+			for i, value := range neurons[neuron].Connections {
+				if value == previous {
+					neurons[neuron].Vector[i]++
+					break
+				}
+			}
+			previous, neuron = neuron, neurons[neuron].Connections[index]
 		}
 	}
 }
