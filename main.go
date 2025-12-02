@@ -128,6 +128,8 @@ var (
 	FlagMorpheus = flag.Bool("morpheus", false, "morpheus mode")
 	// FlagNeural neural mode
 	FlagNeural = flag.Bool("neural", false, "neural mode")
+	// FlagEigenvector eigenvector mode
+	FlagEigenvector = flag.Bool("eigen", false, "eigenvector mode")
 )
 
 // MorpheusMode is the morhpes mode
@@ -297,7 +299,7 @@ func NeuralMode() {
 		fmt.Println(neurons)
 		fmt.Println()
 		previous, neuron := 0, 0
-		for range 1024 {
+		for range 128 {
 			for i := range neurons[neuron].Vector {
 				if neurons[neuron].Vector[i] > 128 {
 					for i, value := range neurons[neuron].Vector {
@@ -329,6 +331,123 @@ func NeuralMode() {
 	}
 }
 
+// EigenSize is the size of the eigenvector
+const EigenSize = 4
+
+// Eigenvector is an eigenvector
+type Eigenvector struct {
+	Eigen [EigenSize]float64
+	Index int
+}
+
+// Node is a node in a graph
+type Node []Eigenvector
+
+// EigenvectorMode is the eigenvector mode
+func EigenvectorMode() {
+	rng := rand.New(rand.NewSource(1))
+	nodes := make([]Node, 8)
+	for range EigenSize {
+		vector := Eigenvector{
+			Index: -1,
+		}
+		for i := range vector.Eigen {
+			vector.Eigen[i] = rng.Float64()
+		}
+		nodes[0] = append(nodes[0], vector)
+	}
+	v := Eigenvector{}
+	for i := range v.Eigen {
+		v.Eigen[i] = rng.Float64()
+	}
+	v.Index = -1
+	node := rng.Intn(len(nodes))
+	for {
+		if node == -1 {
+			node = rng.Intn(len(nodes))
+		}
+		vectors := make([]*Vector[Eigenvector], len(nodes[node])+1)
+		for i := range nodes[node] {
+			vector := Vector[Eigenvector]{}
+			vector.Meta = nodes[node][i]
+			vector.Vector = nodes[node][i].Eigen[:]
+			vectors[i] = &vector
+		}
+		{
+			a := Vector[Eigenvector]{}
+			a.Meta = v
+			a.Vector = v.Eigen[:]
+			vectors[len(vectors)-1] = &a
+		}
+		config := Config{
+			Iterations: 16,
+			Size:       4,
+			Divider:    1,
+		}
+		MorpheusFast(rng.Int63(), config, vectors)
+
+		max, index, min, minIndex := 0.0, 0, 0.0, 0
+		for i := range vectors {
+			if vectors[i].Stddev > max {
+				max, index = vectors[i].Stddev, i
+			}
+			if vectors[i].Stddev < min {
+				min, minIndex = vectors[i].Stddev, i
+			}
+		}
+		if index != len(vectors)-1 {
+			if len(nodes[node]) < 4 {
+				nodes[node] = append(nodes[node], vectors[len(vectors)-1].Meta)
+			} else {
+				nodes[node][index] = vectors[len(vectors)-1].Meta
+			}
+			graph := pagerank.NewGraph(len(nodes[node]), rng)
+			x := NewMatrix(EigenSize, len(nodes[node]), make([]float64, EigenSize*len(nodes[node]))...)
+			for i := range nodes[node] {
+				for ii, value := range nodes[node][i].Eigen {
+					x.Data[i*EigenSize+ii] = value
+				}
+			}
+			cs := x.MulT(x)
+			for i := range cs.Rows {
+				for ii := range cs.Cols {
+					cs := cs.Data[i*cs.Cols+ii]
+					if cs < 0 {
+						cs = -cs
+					}
+					graph.Link(uint32(i), uint32(ii), float64(cs))
+				}
+			}
+
+			v = Eigenvector{}
+			graph.Rank(1.0, 1e-3, func(node int, rank float64) {
+				v.Eigen[node] = rank
+			})
+			v.Index = node
+			if minIndex != len(vectors)-1 {
+				node = vectors[minIndex].Meta.Index
+			} else {
+				node = vectors[index].Meta.Index
+			}
+		} else if len(vectors) == 1 {
+			nodes[node] = append(nodes[node], vectors[len(vectors)-1].Meta)
+			node = rng.Intn(len(nodes))
+			for i := range v.Eigen {
+				v.Eigen[i] = rng.Float64()
+			}
+			v.Index = index
+		} else {
+			v.Index = node
+			node = rng.Intn(len(nodes))
+			for i := range v.Eigen {
+				v.Eigen[i] = rng.Float64()
+			}
+		}
+		fmt.Println(nodes)
+		fmt.Println("--------------------------------------------------")
+	}
+}
+
 func main() {
 	flag.Parse()
 
@@ -339,6 +458,11 @@ func main() {
 
 	if *FlagNeural {
 		NeuralMode()
+		return
+	}
+
+	if *FlagEigenvector {
+		EigenvectorMode()
 		return
 	}
 
