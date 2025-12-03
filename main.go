@@ -356,9 +356,13 @@ func EigenvectorMode() {
 		}
 		nodes[0] = append(nodes[0], vector)
 	}
-	v := Eigenvector{}
+	v, sum := Eigenvector{}, 0.0
 	for i := range v.Eigen {
 		v.Eigen[i] = rng.Float64()
+		sum += v.Eigen[i]
+	}
+	for i := range v.Eigen {
+		v.Eigen[i] /= sum
 	}
 	v.Index = -1
 	node := rng.Intn(len(nodes))
@@ -432,15 +436,25 @@ func EigenvectorMode() {
 		} else if len(vectors) == 1 {
 			nodes[node] = append(nodes[node], vectors[len(vectors)-1].Meta)
 			node = rng.Intn(len(nodes))
+			sum := 0.0
 			for i := range v.Eigen {
 				v.Eigen[i] = rng.Float64()
+				sum += v.Eigen[i]
+			}
+			for i := range v.Eigen {
+				v.Eigen[i] /= sum
 			}
 			v.Index = index
 		} else {
 			v.Index = node
 			node = rng.Intn(len(nodes))
+			sum := 0.0
 			for i := range v.Eigen {
 				v.Eigen[i] = rng.Float64()
+				sum += v.Eigen[i]
+			}
+			for i := range v.Eigen {
+				v.Eigen[i] /= sum
 			}
 		}
 		fmt.Println(nodes)
